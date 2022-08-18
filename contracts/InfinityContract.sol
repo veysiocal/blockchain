@@ -113,7 +113,7 @@ contract InfinityContract {
 
     function withdrawMoneyByParentFromChild(address _childAddress, uint _amount) public onlyParent{
 
-        require(childs[_childAddress].releaseTime > block.timestamp, "You are not allowed widhdraw this money. Money is allowed to usage of child now.");
+        require(childs[_childAddress].releaseTime > block.timestamp, "You are not allowed withdraw this money. Money is allowed to usage of child now.");
 
         require(childs[_childAddress].amountOfMoney >= _amount, "This child have not that much ether");
 
@@ -124,7 +124,7 @@ contract InfinityContract {
 
     function withdrawAllMoneyByParentFromChild(address _childAddress) public onlyParent{
 
-        require(childs[_childAddress].releaseTime > block.timestamp, "You are not allowed widhdraw this money. Money is allowed to usage of child now.");
+        require(childs[_childAddress].releaseTime > block.timestamp, "You are not allowed withdraw this money. Money is allowed to usage of child now.");
 
         require(childs[_childAddress].amountOfMoney != 0, "This child have not any ether");
 
@@ -139,7 +139,7 @@ contract InfinityContract {
     function withdrawMoneyByChild(uint _amount) public onlyChild{
         address walletaddress = msg.sender;
 
-        require(childs[walletaddress].releaseTime <= block.timestamp, "You are not allowed widhdraw money yet");
+        require(childs[walletaddress].releaseTime <= block.timestamp, "You are not allowed withdraw money yet");
         require(childs[walletaddress].amountOfMoney >= _amount, "You are not have that much ether");
 
         childs[walletaddress].amountOfMoney -= _amount;
@@ -154,7 +154,7 @@ contract InfinityContract {
 
         uint amountOfMoneyChildHave = childs[walletaddress].amountOfMoney;
 
-        require(childs[walletaddress].releaseTime <= block.timestamp, "You are not allowed widhdraw money yet");
+        require(childs[walletaddress].releaseTime <= block.timestamp, "You are not allowed withdraw money yet");
         require(amountOfMoneyChildHave != 0, "You are not have any ether");
 
         childs[walletaddress].amountOfMoney = 0;
@@ -178,6 +178,7 @@ contract InfinityContract {
         } else {
             return "none";
         }
+
     }
 
     modifier onlyAdmin() {
