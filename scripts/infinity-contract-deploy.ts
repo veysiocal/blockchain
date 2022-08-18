@@ -1,18 +1,15 @@
 import { ethers } from "hardhat";
 
 async function main() {
-//   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-//   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-//   const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
 
-//   const lockedAmount = ethers.utils.parseEther("1");
+  const InfinityContract = await ethers.getContractFactory("InfinityContract"); // bize contractı geçiyor 
+  const contract = await InfinityContract.deploy();
 
-  const Patent = await ethers.getContractFactory("Patent"); // bize contractı geçiyor 
-  const patent = await Patent.deploy();
+  // @ts-ignore
+  await contract.deployed();
 
-  await patent.deployed();
-
-  console.log("Patent deployed to:", patent.address);
+  // @ts-ignore
+  console.log("Contract deployed to:", contract.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
