@@ -162,7 +162,7 @@ contract InfinityContract {
         payable(msg.sender).transfer(amountOfMoneyChildHave);
     }
 
-    function findRole() public view returns(string memory) {
+    function getRole() public view returns(string memory) {
         address sender = msg.sender;
 
         Parent storage parent = parents[sender];
