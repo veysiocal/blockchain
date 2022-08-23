@@ -246,7 +246,7 @@ describe("Infinity Contract -Parent", function(){
     it("Parent should withdraw all ether from child's adres", async function(){
 
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-
+        
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
