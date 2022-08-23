@@ -1,15 +1,15 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
-// const mnemonic = "";
+ //const mnemonic = "";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.9",
   networks: {
     hardhat: {
-      // accounts: {
-      //   mnemonic,
-      // },
+      //  accounts: {
+      //    mnemonic,
+      //  },
     },
     localhost: {
       url: "http://127.0.0.1:8545",
