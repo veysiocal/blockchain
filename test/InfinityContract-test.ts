@@ -2,24 +2,26 @@ import { expect } from 'chai';
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { ethers } = require("hardhat");
 
-describe("Infinity Contract", function () {
+async function deployFixture() {
+    const [owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
+    const ContractFactoryGet = await ethers.getContractFactory("InfinityContract");
+    const contract = await ContractFactoryGet.deploy();
+    await contract.deployed();
 
-    async function deployFixture() {
-        const [owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
-        const ContractFactoryGet = await ethers.getContractFactory("InfinityContract");
-        const contract = await ContractFactoryGet.deploy();
-        await contract.deployed();
+    return {
+        contract,
+        owner,
+        addr1,
+        addr2,
+        addr3,
+        addr4,
+        addr5,
+    };
+}
 
-        return {
-            contract,
-            owner,
-            addr1,
-            addr2,
-            addr3,
-            addr4,
-            addr5,
-        };
-    }
+
+
+describe("Infinity Contract -Parent", function(){
 
     it("should add parent to the parents list", async function() {
         const {contract, owner, addr1, addr2} = await loadFixture(
@@ -33,11 +35,17 @@ describe("Infinity Contract", function () {
         await expect(getParent.walletaddress).to.equal(addr1.address);
         await expect(getParent.name).to.equal("parent");
         await expect(getParent.surname).to.equal("one");
-
-        await expect(contract.connect(addr1).addParent("parent", "two")).to.be.rejectedWith("This parent is already added!");
-
     })
 
+    it("This parent is already added! -addParent",async function () {
+        const {contract, owner, addr1, addr2} = await loadFixture(
+            deployFixture
+        );
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await expect(contract.connect(addr1).addParent("parent", "two")).to.be.rejectedWith("This parent is already added!");
+    })
+    
     it("should add child", async function() {
         const {contract, owner, addr1, addr2} = await loadFixture(
             deployFixture
@@ -54,7 +62,7 @@ describe("Infinity Contract", function () {
         await expect(getThisChild.releaseTime).to.equal(34324123);
         
     })
-
+    
     it("Should send money to the contract and increase amount of parent money", async function() {
         const { contract, owner, addr1, addr2 } = await loadFixture(deployFixture);
 
@@ -84,30 +92,46 @@ describe("Infinity Contract", function () {
         const getParent = await contract.parents(addr1.address);
 
         await expect(getParent.currentBalance).to.be.equal(ethers.utils.parseEther("0.6"));
+        
+    })
+
+    it("You are not that much ether -withdrawMoneyByParent", async function() {
+        const {contract, owner, addr1, addr2 } = await loadFixture(deployFixture);
+        
+        const parent = await contract.connect(addr1).addParent("parent","one");
+
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")})
+        
+        await contract.connect(addr1).withdrawMoneyByParent(ethers.utils.parseEther("0.4"));    
 
         await expect(contract.connect(addr1).withdrawMoneyByParent(ethers.utils.parseEther("1.2"))).to.be.rejectedWith("You are not that much ether");
-
-        
+    
     })
 
     it("Should send ether to the child", async function () {
         const { contract, owner, addr1, addr2 } = await loadFixture(deployFixture);
 
         const parent = await contract.connect(addr1).addParent("parent","one");
-
         await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")})
 
         const child = await contract.connect(addr1).addChild("child one", 13128324, addr2.address);
-        
         const send = await contract.connect(addr1).sendMoneyToChild(addr2.address, ethers.utils.parseEther("0.1"));
         
         const getChild = await contract.childs(addr2.address);
-
         await expect(getChild.amountOfMoney).to.equal(ethers.utils.parseEther("0.1"));
 
         const getParent = await contract.parents(addr1.address);
-
         await expect(getParent.currentBalance).to.equal(ethers.utils.parseEther("0.9"));
+
+    })
+    it("You have not that much ether -sendMoneyToChild", async function () {
+        const { contract, owner, addr1, addr2 } = await loadFixture(deployFixture);
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")})
+
+        const child = await contract.connect(addr1).addChild("child one", 13128324, addr2.address);  
+        const send = await contract.connect(addr1).sendMoneyToChild(addr2.address, ethers.utils.parseEther("0.1"));
 
         await expect(contract.connect(addr1).sendMoneyToChild(addr2.address, ethers.utils.parseEther("2"))).to.be.rejectedWith("You have not that much ether");
 
@@ -115,28 +139,57 @@ describe("Infinity Contract", function () {
 
     it("Parent should withdraw all ether", async function(){
 
-        const {contract, owner, addr1, addr2 } = await loadFixture(deployFixture);
+        const {contract,addr1} = await loadFixture(deployFixture);
         
         const parent = await contract.connect(addr1).addParent("parent","one");
-        const parent2 = await contract.connect(addr2).addParent("parent","iki");
 
         await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")});
-
         await contract.connect(addr1).withdrawAllMoneyByParent();
 
         const getParent = await contract.parents(addr1.address);
-
         await expect(getParent.currentBalance).to.be.equal(ethers.utils.parseEther("0"));
 
-        await expect(contract.connect(addr2).withdrawAllMoneyByParent()).to.be.rejectedWith("You are not have any ehter");
+    })
+    it("You are not have any ehter -withdrawAllMoneyByParent", async function(){
 
+        const {contract,addr1} = await loadFixture(deployFixture);
+        
+        const parent = await contract.connect(addr1).addParent("parent","one");
+
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")});
+        await contract.connect(addr1).withdrawAllMoneyByParent();
+
+        await expect(contract.connect(addr1).withdrawAllMoneyByParent()).to.be.rejectedWith("You are not have any ehter");
 
     })
 
     it("Parent should withdraw amount of ether from child's adress", async function(){
 
+        const {contract, owner, addr1, addr2} = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")});
+
+        const child = await contract.connect(addr1).addChild("child one", (Number(timestampAfter) + 300), addr2.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1")); 
+        await contract.connect(addr1).withdrawMoneyByParentFromChild(addr2.address,ethers.utils.parseEther("0.4"));
+
+        const getParent = await contract.parents(addr1.address);
+        await expect(getParent.currentBalance).to.be.equal(ethers.utils.parseEther("0.4"));
+
+        const getChild = await contract.childs(addr2.address);
+        await expect(getChild.amountOfMoney).to.be.equal(ethers.utils.parseEther("0.6"));
+
+    })
+    it("You are not allowed withdraw this money. -withdrawMoneyByParentFromChild", async function(){
+
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-        //şuanki zamanı kullanıyor
+
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
@@ -145,32 +198,35 @@ describe("Infinity Contract", function () {
         await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
 
         const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
-        
         await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));
           
         await expect(contract.connect(addr1).withdrawMoneyByParentFromChild(addr2.address,ethers.utils.parseEther("1"))).to.be.rejectedWith("You are not allowed withdraw this money. Money is allowed to usage of child now.");
 
-        const child2 = await contract.connect(addr1).addChild("child iki", (Number(timestampAfter) + 300), addr3.address);
+    })
+    it("This child have not that much ether -withdrawMoneyByParentFromChild", async function(){
 
-        await contract.connect(addr1).sendMoneyToChild(addr3.address,ethers.utils.parseEther("1"));
-        
-        await contract.connect(addr1).withdrawMoneyByParentFromChild(addr3.address,ethers.utils.parseEther("0.4"));
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+    
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
 
-        const getParent = await contract.parents(addr1.address);
-        await expect(getParent.currentBalance).to.be.equal(ethers.utils.parseEther("0.4"));
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
 
-        const getChild = await contract.childs(addr3.address);
-        await expect(getChild.amountOfMoney).to.be.equal(ethers.utils.parseEther("0.6"));
-        
-        
-        await expect(contract.connect(addr1).withdrawMoneyByParentFromChild(addr3.address,ethers.utils.parseEther("0.9"))).to.be.rejectedWith("This child have not that much ether");
+        const child = await contract.connect(addr1).addChild("child one", (Number(timestampAfter) + 300), addr2.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));     
+        await contract.connect(addr1).withdrawMoneyByParentFromChild(addr2.address,ethers.utils.parseEther("0.4"));
+             
+        await expect(contract.connect(addr1).withdrawMoneyByParentFromChild(addr2.address,ethers.utils.parseEther("0.9"))).to.be.rejectedWith("This child have not that much ether");
 
     })
 
-    it("Parent should withdraw all ether from child's adres", async function(){
+    it("You are not allowed withdraw this money. -withdrawAllMoneyByParentFromChild", async function(){
 
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-        //şuanki zamanı kullanıyor
+
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
@@ -185,7 +241,20 @@ describe("Infinity Contract", function () {
           
         await expect(contract.connect(addr1).withdrawAllMoneyByParentFromChild(addr2.address)).to.be.rejectedWith("You are not allowed withdraw this money. Money is allowed to usage of child now.");
 
-        const child2 = await contract.connect(addr1).addChild("child iki", (Number(timestampAfter) + 300), addr3.address);
+    })
+    
+    it("Parent should withdraw all ether from child's adres", async function(){
+
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")});
+
+        const child = await contract.connect(addr1).addChild("child iki", (Number(timestampAfter) + 300), addr3.address);
 
         await contract.connect(addr1).sendMoneyToChild(addr3.address,ethers.utils.parseEther("1"));
         
@@ -196,17 +265,72 @@ describe("Infinity Contract", function () {
 
         const getChild = await contract.childs(addr3.address);
         await expect(getChild.amountOfMoney).to.be.equal(ethers.utils.parseEther("0"));
-        
-        
-        await expect(contract.connect(addr1).withdrawAllMoneyByParentFromChild(addr3.address)).to.be.rejectedWith("This child have not any ether");
 
     })
-    
-
-    it("Child withdraw amount of money", async function(){
+    it("This child have not any ether -withdrawAllMoneyByParentFromChild", async function(){
 
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
         //şuanki zamanı kullanıyor
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
+
+        const child = await contract.connect(addr1).addChild("child iki", (Number(timestampAfter) + 300), addr3.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr3.address,ethers.utils.parseEther("1"));  
+        await contract.connect(addr1).withdrawAllMoneyByParentFromChild(addr3.address);
+  
+        await expect(contract.connect(addr1).withdrawAllMoneyByParentFromChild(addr3.address)).to.be.rejectedWith("This child have not any ether");
+
+    })
+
+    it("Should change release time of child", async function() {
+        const {contract,addr1, addr2,} = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address); 
+        
+        await contract.connect(addr1).changeReleaseTime(addr2.address, (Number(timestampAfter) + 300));
+
+        const getChild = await contract.childs(addr2.address);
+
+        await expect(getChild.releaseTime).to.be.equal((Number(timestampAfter) + 300));
+
+    })
+    
+    it("This child is not your child! -changeReleaseTime", async function() {
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address); 
+
+        const parent2 = await contract.connect(addr3).addParent("parent","one");
+
+        await expect(contract.connect(addr3).changeReleaseTime(addr2.address, (Number(timestampAfter) + 300))).to.be.rejectedWith("This child is not your child!");
+    })
+
+
+}) 
+
+
+describe("Infinity Contract-Child", function () {
+    
+    
+    it("Child withdraw amount of money", async function(){
+
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
@@ -224,21 +348,47 @@ describe("Infinity Contract", function () {
         await expect(getChild.amountOfMoney).to.be.equal(ethers.utils.parseEther("0.6"));
 
         await expect(getChild.totalWithdrawnMoney).to.be.equal(ethers.utils.parseEther("0.4"));
+    })
+    it("You are not have that much ether -withdrawMoneyByChild", async function(){
 
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
 
-        const child2 = await contract.connect(addr1).addChild("child one", (Number(timestampAfter)+300), addr3.address);
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
 
-        await contract.connect(addr1).sendMoneyToChild(addr3.address,ethers.utils.parseEther("1"));
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("1")});
 
-        await expect(contract.connect(addr3).withdrawMoneyByChild(ethers.utils.parseEther("1"))).to.be.rejectedWith("You are not allowed withdraw money yet");
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));
+        await contract.connect(addr2).withdrawMoneyByChild(ethers.utils.parseEther("0.4"));
 
         await expect(contract.connect(addr2).withdrawMoneyByChild(ethers.utils.parseEther("0.8"))).to.be.rejectedWith("You are not have that much ether");
+    })
+    it("You are not allowed withdraw money yet -withdrawMoneyByChild", async function(){
+
+        const {contract,addr1, addr2} = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
+        
+        const child = await contract.connect(addr1).addChild("child one", (Number(timestampAfter)+300), addr2.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));
+
+        await expect(contract.connect(addr2).withdrawMoneyByChild(ethers.utils.parseEther("1"))).to.be.rejectedWith("You are not allowed withdraw money yet");
     })
 
     it("Child withdraw all money", async function(){
 
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-        //şuanki zamanı kullanıyor
+   
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
@@ -257,36 +407,50 @@ describe("Infinity Contract", function () {
 
         await expect(getChild.totalWithdrawnMoney).to.be.equal(ethers.utils.parseEther("1"));
 
-        const child2 = await contract.connect(addr1).addChild("child one", (Number(timestampAfter)+300), addr3.address);
-
-        await contract.connect(addr1).sendMoneyToChild(addr3.address,ethers.utils.parseEther("1"));
-
-        await expect(contract.connect(addr3).withdrawAllMoneyByChild()).to.be.rejectedWith("You are not allowed withdraw money yet");
-
-        await expect(contract.connect(addr2).withdrawAllMoneyByChild()).to.be.rejectedWith("You are not have any ether");
     })
+    it("You are not allowed withdraw money yet -withdrawAllMoneyByChild", async function(){
 
-    it("Should change release time of child", async function() {
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-
+      
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
 
         const parent = await contract.connect(addr1).addParent("parent","one");
-        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address); 
-        
-        await contract.connect(addr1).changeReleaseTime(addr2.address, (Number(timestampAfter) + 300));
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
 
-        const getChild = await contract.childs(addr2.address);
+        const child = await contract.connect(addr1).addChild("child one", (Number(timestampAfter)+300), addr2.address);
 
-        await expect(getChild.releaseTime).to.be.equal((Number(timestampAfter) + 300));
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));
 
-        const parent2 = await contract.connect(addr3).addParent("parent","one");
+        await expect(contract.connect(addr2).withdrawAllMoneyByChild()).to.be.rejectedWith("You are not allowed withdraw money yet");
+       
+    })
+    
+    it("You are not have any ether -withdrawAllMoneyByChild", async function(){
 
-        await expect(contract.connect(addr3).changeReleaseTime(addr2.address, (Number(timestampAfter) + 300))).to.be.rejectedWith("This child is not your child!");
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+      
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        await contract.connect(addr1).sendMoney({value: ethers.utils.parseEther("2")});
+
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
+
+        await contract.connect(addr1).sendMoneyToChild(addr2.address,ethers.utils.parseEther("1"));
+
+        await contract.connect(addr2).withdrawAllMoneyByChild();
+
+        await expect(contract.connect(addr2).withdrawAllMoneyByChild()).to.be.rejectedWith("You are not have any ether");
     })
 
+})
+
+describe("Infinity Contract-Admin",function(){
+    
     it("Should get user role", async function(){
 
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
@@ -312,10 +476,9 @@ describe("Infinity Contract", function () {
        
     })
 
-    it("Modifier check", async function(){
-
+    it("Modifier check-Only parent", async function(){
         const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
-        //şuanki zamanı kullanıyor
+    
         const blockNumAfter = await ethers.provider.getBlockNumber();
         const blockAfter = await ethers.provider.getBlock(blockNumAfter);
         const timestampAfter = blockAfter.timestamp;
@@ -324,25 +487,40 @@ describe("Infinity Contract", function () {
         const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
 
         await expect(contract.connect(addr2).sendMoney({value: ethers.utils.parseEther("2")})).to.be.rejectedWith("Only parent can do this");
-
         await expect(contract.connect(owner).sendMoney({value: ethers.utils.parseEther("2")})).to.be.rejectedWith("Only parent can do this");
-
         await expect(contract.connect(addr3).sendMoney({value: ethers.utils.parseEther("2")})).to.be.rejectedWith("Only parent can do this");
-
-        await expect(contract.connect(owner).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
-
-        await expect(contract.connect(addr1).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
-
-        await expect(contract.connect(addr3).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
-
-        await expect(contract.connect(addr3).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
-
-        await expect(contract.connect(addr2).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
-
-        await expect(contract.connect(addr1).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
     
     })
 
-    
+    it("Modifier check-Only child", async function(){
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
 
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
+
+        await expect(contract.connect(owner).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
+        await expect(contract.connect(addr1).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
+        await expect(contract.connect(addr3).withdrawMoneyByChild(ethers.utils.parseEther("2"))).to.be.rejectedWith("Only child can do this");
+
+    })
+
+    it("Modifier check-Only admin", async function(){
+        const {contract, owner, addr1, addr2, addr3 } = await loadFixture(deployFixture);
+
+        const blockNumAfter = await ethers.provider.getBlockNumber();
+        const blockAfter = await ethers.provider.getBlock(blockNumAfter);
+        const timestampAfter = blockAfter.timestamp;
+
+        const parent = await contract.connect(addr1).addParent("parent","one");
+        const child = await contract.connect(addr1).addChild("child one", timestampAfter, addr2.address);
+
+        await expect(contract.connect(addr3).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
+        await expect(contract.connect(addr2).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
+        await expect(contract.connect(addr1).showBalanceOfContract()).to.be.rejectedWith("Only admin can do this");
+    
+    })
 })
