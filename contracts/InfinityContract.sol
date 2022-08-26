@@ -82,7 +82,7 @@ contract InfinityContract {
         parent.walletaddress = sender;
 
         admins[owner].parents.push(parent.walletaddress);
-        admins[owner].parentIndex++;      
+        admins[owner].parentIndex++;
     }
 
     function addChild(
@@ -172,7 +172,7 @@ contract InfinityContract {
     {
         require(
             childs[_childAddress].releaseTime > block.timestamp,
-            "You are not allowed withdraw this money. Money is allowed to usage of child now."
+            "You are not allowed withdraw this money. Money is allowed to usage of child now. TRBu parayi cekmenize izin verilmiyor. Bu para artik cocugun kullaniminda. "
         );
 
         require(
