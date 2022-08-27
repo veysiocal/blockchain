@@ -52,7 +52,7 @@ contract InfinityContract {
     {
         require(
             parents[msg.sender].currentBalance >= _amount,
-            "You have not that much ether"
+            "You have not that much ether! TR Bu miktarda paraniz bulunmamaktadir!"
         );
 
         parents[msg.sender].currentBalance -= _amount;
@@ -74,7 +74,7 @@ contract InfinityContract {
 
         require(
             parent.walletaddress != sender,
-            "This parent is already added!"
+            "This parent is already added! TR Ebeveyn zaten kayitli!"
         );
 
         parent.name = _name;
@@ -94,7 +94,7 @@ contract InfinityContract {
 
         require(
             child.walletaddress != _childAddress,
-            "This child is already added!"
+            "This account is already added! TR Bu adres baska bir hesap tarafindan kullanilmakta"
         );
         Child memory childNew = Child(
             _childAddress,
@@ -137,7 +137,7 @@ contract InfinityContract {
     {
         require(
             childs[_childAddress].parentAddress == msg.sender,
-            "This child is not your child!"
+            "This child is not your child! TR Bu cocuk sizin cocogunuz olarak gozukmemekte!"
         );
         childs[_childAddress].releaseTime = _newReleaseTime;
     }
@@ -145,7 +145,7 @@ contract InfinityContract {
     function withdrawMoneyByParent(uint _amount) public onlyParent {
         require(
             parents[msg.sender].currentBalance >= _amount,
-            "You are not that much ether"
+            "You are not that much ether! TR Bu miktarda paraniz bulunmamaktadir!"
         );
 
         parents[msg.sender].currentBalance -= _amount;
@@ -156,7 +156,7 @@ contract InfinityContract {
     function withdrawAllMoneyByParent() public onlyParent {
         require(
             parents[msg.sender].currentBalance != 0,
-            "You are not have any ehter"
+            "You are not have any ehter! TR Paraniz bulunmamaktadir!"
         );
 
         uint amountOfAccessableMoney = parents[msg.sender].currentBalance;
@@ -172,12 +172,12 @@ contract InfinityContract {
     {
         require(
             childs[_childAddress].releaseTime > block.timestamp,
-            "You are not allowed withdraw this money. Money is allowed to usage of child now. TRBu parayi cekmenize izin verilmiyor. Bu para artik cocugun kullaniminda. "
+            "You are not allowed withdraw this money. Money is allowed to usage of child now. TR Bu parayi cekmenize izin verilmiyor. Bu para artik cocugun kullaniminda."
         );
 
         require(
             childs[_childAddress].amountOfMoney >= _amount,
-            "This child have not that much ether"
+            "This child have not that much ether! TR Cocugunuzun bu miktarda parasi bulunmamaktadir!"
         );
 
         parents[msg.sender].currentBalance += _amount;
@@ -191,12 +191,12 @@ contract InfinityContract {
     {
         require(
             childs[_childAddress].releaseTime > block.timestamp,
-            "You are not allowed withdraw this money. Money is allowed to usage of child now. ?? fwfwfwfwfwfw"
+            "You are not allowed withdraw this money. Money is allowed to usage of child now. TR Bu parayi cekmenize izin verilmiyor. Bu para artik cocugun kullaniminda."
         );
 
         require(
             childs[_childAddress].amountOfMoney != 0,
-            "This child have not any ether"
+            "This child have not any ether! Cocugunuzun parasi bulunmamaktadir!"
         );
 
         uint amountOfMoney = childs[_childAddress].amountOfMoney;
@@ -211,11 +211,11 @@ contract InfinityContract {
 
         require(
             childs[walletaddress].releaseTime <= block.timestamp,
-            "You are not allowed withdraw money yet"
+            "You are not allowed withdraw money yet! TR Islem yapmaniza henuz izin verilmiyor!"
         );
         require(
             childs[walletaddress].amountOfMoney >= _amount,
-            "You are not have that much ether"
+            "You are not have that much ether! TR Bu miktarda paraniz bulunmamakta!"
         );
 
         childs[walletaddress].amountOfMoney -= _amount;
@@ -232,9 +232,9 @@ contract InfinityContract {
 
         require(
             childs[walletaddress].releaseTime <= block.timestamp,
-            "You are not allowed withdraw money yet"
+            "You are not allowed withdraw money yet! TR Islem yapmaniza henuz izin verilmiyor!"
         );
-        require(amountOfMoneyChildHave != 0, "You are not have any ether");
+        require(amountOfMoneyChildHave != 0, "You are not have any ether! TR Hesabinizda paraniz bulunmamakta!");
 
         childs[walletaddress].amountOfMoney = 0;
         childs[walletaddress].totalWithdrawnMoney += amountOfMoneyChildHave;
@@ -259,21 +259,21 @@ contract InfinityContract {
     }
 
     modifier onlyAdmin() {
-        require(owner == msg.sender, "Only admin can do this");
+        require(owner == msg.sender, "Only admin can do this! TR Bu islemi sadece admin yapabilir!");
         _;
     }
 
     modifier onlyParent() {
         address sender = msg.sender;
         Parent storage parent = parents[sender];
-        require(parent.walletaddress == sender, "Only parent can do this");
+        require(parent.walletaddress == sender, "Only parent can do this! TR Bu islemi sadece ebeveyn hesabi yapabilir!");
         _;
     }
 
     modifier onlyChild() {
         address sender = msg.sender;
         Child storage child = childs[sender];
-        require(child.walletaddress == sender, "Only child can do this");
+        require(child.walletaddress == sender, "Only child can do this! TR Bu islemi sadece cocuk hesabi yapabilir");
         _;
     }
 }
