@@ -122,7 +122,7 @@ contract InfinityContract {
         return childsOfParent;
     }
 
-    function getParents() public view onlyParent returns (Parent[] memory) {
+    function getParents() public view onlyAdmin returns (Parent[] memory) {
         Parent[] memory adminParents = new Parent[](admins[owner].parentIndex);
 
         for (uint i = 0; i < admins[owner].parentIndex; i++) {
