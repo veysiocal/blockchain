@@ -200,7 +200,7 @@ contract InfinityContract {
 
         require(
             childs[_childAddress].amountOfMoney >= _amount,
-            "This child have not any ether! Cocugunuzun parasi bulunmamaktadir!"
+            "This child have not any ether! TR Cocugunuzun parasi bulunmamaktadir!"
         );
 
         childs[_childAddress].amountOfMoney -= _amount;
