@@ -59,6 +59,10 @@ contract InfinityContract {
         childs[_childAddress].amountOfMoney += _amount;
     }
 
+    function sendMoneyToChildFromWallet(address _childAddress) public payable onlyParent {
+        childs[_childAddress].amountOfMoney += msg.value;
+    }
+
     function showMyBalance() public view onlyParent returns (uint) {
         return parents[msg.sender].currentBalance;
     }
@@ -185,7 +189,7 @@ contract InfinityContract {
         childs[_childAddress].amountOfMoney -= _amount;
     }
 
-    function withdrawAllMoneyByParentFromChild(address _childAddress)
+    function withdrawMoneyByParentToWallet(address _childAddress, uint _amount)
         public
         onlyParent
     {
@@ -195,15 +199,14 @@ contract InfinityContract {
         );
 
         require(
-            childs[_childAddress].amountOfMoney != 0,
+            childs[_childAddress].amountOfMoney >= _amount,
             "This child have not any ether! Cocugunuzun parasi bulunmamaktadir!"
         );
 
-        uint amountOfMoney = childs[_childAddress].amountOfMoney;
+        childs[_childAddress].amountOfMoney -= _amount;
 
-        childs[_childAddress].amountOfMoney = 0;
+        payable(msg.sender).transfer(_amount);
 
-        parents[msg.sender].currentBalance += amountOfMoney;
     }
 
     function withdrawMoneyByChild(uint _amount) public onlyChild {
